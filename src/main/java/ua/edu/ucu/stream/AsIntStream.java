@@ -2,129 +2,218 @@ package ua.edu.ucu.stream;
 
 import ua.edu.ucu.function.*;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 public class AsIntStream implements IntStream {
+    private IntIterator iterator;
     private int[] values;
     private int length;
-    private IntIterator iterator;
     private AsIntStream() {
         // To Do
     }
 
     public static IntStream of(int... values) {
-        AsIntStream object = new AsIntStream();
-        object.iterator = object.new DefaultIterator();
-        return object;
+
+        AsIntStream intStream = new AsIntStream();
+        intStream.iterator = intStream.new DefaultIterator();
+        intStream.length = values.length;
+        intStream.values =values;
+        return intStream;
     }
 
     @Override
     public Double average() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        double sum = 0;
+        int count = 0;
+        while (iterator.moveToNext()) {
+            sum += iterator.getValue();
+            ++count;
+        }
+        if (count >0)
+            return sum/count;
+        return 0.0;
     }
 
     @Override
     public Integer max() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        int max = Integer.MIN_VALUE;
+        while (iterator.moveToNext()) {
+            if (iterator.getValue() > max) {
+                max = iterator.getValue();
+            }
+        }
+
+        return max;
     }
 
     @Override
     public Integer min() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        int min = Integer.MAX_VALUE;
+        while (iterator.moveToNext()) {
+            if (iterator.getValue() < min) {
+                min = iterator.getValue();
+            }
+        }
+
+        return min;
     }
 
     @Override
     public long count() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        long count = 0;
+        while (iterator.moveToNext()) {
+            count++;
+        }
+        return count;
     }
 
     @Override
     public Integer sum() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        int sum = 0;
+        while (iterator.moveToNext()) {
+            sum += iterator.getValue();
+        }
+        return sum;
     }
 
     @Override
     public IntStream filter(IntPredicate predicate) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        this.iterator = new FilterIterator(this.iterator, predicate);
+        return this;
     }
 
     @Override
     public void forEach(IntConsumer action) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        while (iterator.moveToNext()) {
+            action.accept(iterator.getValue());
+        }
     }
 
     @Override
     public IntStream map(IntUnaryOperator mapper) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        this.iterator = new MapIterator(this.iterator, mapper);
+        return this;
     }
 
     @Override
     public IntStream flatMap(IntToIntStreamFunction func) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        List<Integer> resultList = new LinkedList<>();
+        while (iterator.moveToNext()) {
+            IntStream intStream = func.applyAsIntStream(iterator.getValue());
+            for(int elem:intStream.toArray()){
+                resultList.add(elem);
+            }
+
+        }
+        int[] resultArray = new int[resultList.size()];
+        int index = -1;
+        for (Integer resultInt : resultList) {
+            resultArray[++index] = resultInt;
+        }
+        return AsIntStream.of(resultArray);
     }
 
     @Override
     public int reduce(int identity, IntBinaryOperator op) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        int result = identity;
+        while (iterator.moveToNext()) {
+            result = op.apply(result, iterator.getValue());
+        }
+        return result;
     }
 
     @Override
     public int[] toArray() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        List<Integer> resultList = new ArrayList<>();
+        while (iterator.moveToNext()) {
+            resultList.add(iterator.getValue());
+        }
+        int[] resultArray = new int[resultList.size()];
+        int index = -1;
+        for (Integer resultInteger : resultList) {
+            resultArray[++index] = resultInteger;
+        }
+        return resultArray;
     }
 
-    public class DefaultIterator implements IntIterator {
-        private int currentInd = -1;
-        private int length;
-        DefaultIterator(){
-
-        }
-        @Override
-        public boolean hasNext() {
-            return false;
-        }
+    private class DefaultIterator implements IntIterator {
+        private int currentIndex = -1;
+        private boolean isEnd = true;
 
         @Override
-        public void next() {
-            ++currentInd;
+        public boolean moveToNext() {
+            ++currentIndex;
+            this.isEnd = currentIndex >= length;
+            return !this.isEnd;
         }
 
         @Override
-        public int value() {
-            return values[currentInd];
+        public int getValue() {
+            return values[currentIndex];
         }
 
         @Override
-        public int getIndex() {
-            return currentInd;
+        public boolean isEnd() {
+            return isEnd;
         }
 
-        @Override
-        public void setIndex(int currentIndex) {
-            this.currentInd = currentIndex;
-        }
+
     }
-    public class FilterIterator extends DefaultIterator{
-        IntIterator oldIterator;
-        IntPredicate predicate;
-        FilterIterator(IntIterator old, IntPredicate predicate){
-            this.oldIterator = old;
-            this.predicate = predicate;
-        }
-        @Override
-        public void next() {
-            while (oldIterator.hasNext() && !predicate.test(oldIterator.value())) {
-                }
-            }
+}
+
+
+class FilterIterator implements IntIterator {
+
+    private IntIterator oldIterator;
+    private IntPredicate predicate;
+
+    public FilterIterator (IntIterator oldIterator, IntPredicate predicate) {
+        this.oldIterator = oldIterator;
+        this.predicate = predicate;
     }
-    public class MapIterator extends DefaultIterator{
-        IntIterator oldIterator;
-        IntUnaryOperator operator;
-        MapIterator(IntIterator old, IntUnaryOperator operator){
-            this.operator = operator;
-            this.oldIterator = old;
+
+    @Override
+    public boolean moveToNext() {
+        while (oldIterator.moveToNext() && !predicate.test(oldIterator.getValue())) {
+
         }
-        @Override
-        public int value() {
-            return operator.apply(oldIterator.value());
-        }
+        return !this.isEnd();
+    }
+    @Override
+    public int getValue() {
+        return oldIterator.getValue();
+    }
+
+    @Override
+    public boolean isEnd() {
+        return oldIterator.isEnd();
+    }
+
+}
+
+class MapIterator implements IntIterator{
+
+    private IntIterator oldIterator;
+    private IntUnaryOperator mapOperator;
+    public MapIterator (IntIterator oldIterator, IntUnaryOperator mapOperator) {
+        this.oldIterator = oldIterator;
+        this.mapOperator = mapOperator;
+    }
+
+    @Override
+    public boolean moveToNext() {
+        return oldIterator.moveToNext();
+    }
+
+    @Override
+    public int getValue() {
+        return mapOperator.apply(oldIterator.getValue());
+    }
+
+    @Override
+    public boolean isEnd() {
+        return oldIterator.isEnd();
     }
 }
