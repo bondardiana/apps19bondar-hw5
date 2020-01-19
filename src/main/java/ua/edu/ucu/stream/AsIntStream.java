@@ -31,14 +31,21 @@ public class AsIntStream implements IntStream {
             sum += iterator.getValue();
             ++count;
         }
-        if (count >0)
+
+        System.out.println(sum/count);
+        if (count > 0)
             return sum/count;
-        return 0.0;
+
+        throw new IllegalArgumentException();
     }
 
     @Override
     public Integer max() {
         int max = Integer.MIN_VALUE;
+        if (!iterator.moveToNext()){
+            throw new IllegalArgumentException();
+        }
+
         while (iterator.moveToNext()) {
             if (iterator.getValue() > max) {
                 max = iterator.getValue();
@@ -51,6 +58,9 @@ public class AsIntStream implements IntStream {
     @Override
     public Integer min() {
         int min = Integer.MAX_VALUE;
+        if (!iterator.moveToNext()){
+            throw new IllegalArgumentException();
+        }
         while (iterator.moveToNext()) {
             if (iterator.getValue() < min) {
                 min = iterator.getValue();
@@ -72,6 +82,9 @@ public class AsIntStream implements IntStream {
     @Override
     public Integer sum() {
         int sum = 0;
+        if (!iterator.moveToNext()){
+            throw new IllegalArgumentException();
+        }
         while (iterator.moveToNext()) {
             sum += iterator.getValue();
         }
@@ -86,6 +99,7 @@ public class AsIntStream implements IntStream {
 
     @Override
     public void forEach(IntConsumer action) {
+
         while (iterator.moveToNext()) {
             action.accept(iterator.getValue());
         }
