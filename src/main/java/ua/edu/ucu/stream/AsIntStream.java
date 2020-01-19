@@ -45,7 +45,9 @@ public class AsIntStream implements IntStream {
         if (!iterator.moveToNext()){
             throw new IllegalArgumentException();
         }
-
+        if (iterator.getValue() > max) {
+            max = iterator.getValue();
+        }
         while (iterator.moveToNext()) {
             if (iterator.getValue() > max) {
                 max = iterator.getValue();
@@ -58,15 +60,17 @@ public class AsIntStream implements IntStream {
     @Override
     public Integer min() {
         int min = Integer.MAX_VALUE;
-        if (!iterator.moveToNext()){
+        if (!iterator.moveToNext()) {
             throw new IllegalArgumentException();
+        }
+        if (iterator.getValue() < min) {
+            min = iterator.getValue();
         }
         while (iterator.moveToNext()) {
             if (iterator.getValue() < min) {
                 min = iterator.getValue();
             }
         }
-
         return min;
     }
 
